@@ -1,0 +1,170 @@
+{
+  "category": "cloud_api",
+  "provider": "aws",
+  "description": "Irreversibility scores for common AWS API operations across S3, RDS, EC2, IAM, and DynamoDB.",
+  "scoring_scale": "0 = fully safe/read-only, 10 = permanent and irreversible",
+  "patterns": [
+    {
+      "match": "s3:DeleteBucket",
+      "aliases": ["DeleteBucket"],
+      "type": "cloud_api",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Deletes an S3 bucket. The bucket name is released and its contents are gone unless versioning plus replication was configured.",
+      "safer_alternative": "Require human confirmation. Confirm contents are replicated elsewhere."
+    },
+    {
+      "match": "s3:DeleteObject",
+      "aliases": ["DeleteObject"],
+      "type": "cloud_api",
+      "score": 8,
+      "reversible": false,
+      "explanation": "Deletes an object. Recoverable only if bucket versioning is enabled.",
+      "safer_alternative": "Confirm bucket versioning is enabled, or require human confirmation."
+    },
+    {
+      "match": "s3:PutObject",
+      "aliases": ["PutObject"],
+      "type": "cloud_api",
+      "score": 4,
+      "reversible": true,
+      "explanation": "Writes an object. Can overwrite existing data; the prior version is lost unless bucket versioning is enabled.",
+      "safer_alternative": "Confirm bucket versioning is enabled before allowing overwrites."
+    },
+    {
+      "match": "s3:GetObject",
+      "aliases": ["GetObject"],
+      "type": "cloud_api",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Reads an object. Read-only.",
+      "safer_alternative": null
+    },
+    {
+      "match": "rds:DeleteDBInstance",
+      "aliases": ["DeleteDBInstance"],
+      "type": "cloud_api",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Deletes an RDS database instance. Irreversible unless a final snapshot is taken at deletion time.",
+      "safer_alternative": "Require human confirmation. Ensure SkipFinalSnapshot is false."
+    },
+    {
+      "match": "rds:DeleteDBSnapshot",
+      "aliases": ["DeleteDBSnapshot"],
+      "type": "cloud_api",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Deletes a database backup snapshot. Destroys a recovery point permanently.",
+      "safer_alternative": "Require human confirmation. Confirm other valid snapshots exist."
+    },
+    {
+      "match": "rds:RebootDBInstance",
+      "aliases": ["RebootDBInstance"],
+      "type": "cloud_api",
+      "score": 3,
+      "reversible": true,
+      "explanation": "Reboots an RDS instance. Causes brief downtime but no data loss; reversible.",
+      "safer_alternative": "Confirm the instance is not serving live traffic at the time."
+    },
+    {
+      "match": "ec2:TerminateInstances",
+      "aliases": ["TerminateInstances"],
+      "type": "cloud_api",
+      "score": 9,
+      "reversible": false,
+      "explanation": "Terminates EC2 instances. Instance store data is lost. EBS volumes may be deleted depending on the DeleteOnTermination flag.",
+      "safer_alternative": "Require human confirmation. Check DeleteOnTermination settings on attached volumes."
+    },
+    {
+      "match": "ec2:DeleteVolume",
+      "aliases": ["DeleteVolume"],
+      "type": "cloud_api",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Deletes an EBS volume and all data on it. Recoverable only from a snapshot.",
+      "safer_alternative": "Require human confirmation. Confirm a recent snapshot exists."
+    },
+    {
+      "match": "ec2:StopInstances",
+      "aliases": ["StopInstances"],
+      "type": "cloud_api",
+      "score": 4,
+      "reversible": true,
+      "explanation": "Stops EC2 instances. Reversible by starting them again, though instance store data is lost.",
+      "safer_alternative": "Confirm the instance is not serving live traffic."
+    },
+    {
+      "match": "iam:DeleteRole",
+      "aliases": ["DeleteRole"],
+      "type": "cloud_api",
+      "score": 8,
+      "reversible": false,
+      "explanation": "Deletes an IAM role. Breaks every service or workload that assumed it. Recreating it does not restore trust relationships automatically.",
+      "safer_alternative": "Require human confirmation. Audit which workloads depend on the role."
+    },
+    {
+      "match": "iam:PutRolePolicy",
+      "aliases": ["PutRolePolicy", "AttachRolePolicy"],
+      "type": "cloud_api",
+      "score": 7,
+      "reversible": true,
+      "explanation": "Attaches or modifies an IAM policy. Reversible, but can dramatically widen the blast radius while active.",
+      "safer_alternative": "Confirm the policy follows least privilege before allowing."
+    },
+    {
+      "match": "dynamodb:DeleteTable",
+      "aliases": ["DeleteTable"],
+      "type": "cloud_api",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Deletes a DynamoDB table and all items. Recoverable only if point-in-time recovery or an on-demand backup exists.",
+      "safer_alternative": "Require human confirmation. Confirm point-in-time recovery is enabled."
+    },
+    {
+      "match": "dynamodb:DeleteItem",
+      "aliases": ["DeleteItem"],
+      "type": "cloud_api",
+      "score": 7,
+      "reversible": false,
+      "explanation": "Deletes an item from a DynamoDB table. No built-in recovery unless point-in-time recovery is enabled.",
+      "safer_alternative": "Confirm point-in-time recovery is enabled, or require human confirmation."
+    },
+    {
+      "match": "dynamodb:GetItem",
+      "aliases": ["GetItem"],
+      "type": "cloud_api",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Reads an item from a DynamoDB table. Read-only.",
+      "safer_alternative": null
+    },
+    {
+      "match": "s3:ListBucket",
+      "aliases": ["ListBucket", "ListObjects"],
+      "type": "cloud_api",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Read-only listing of bucket contents.",
+      "safer_alternative": null
+    },
+    {
+      "match": "ec2:DescribeInstances",
+      "aliases": ["DescribeInstances"],
+      "type": "cloud_api",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Read-only description of EC2 instances.",
+      "safer_alternative": null
+    },
+    {
+      "match": "iam:ListRoles",
+      "aliases": ["ListRoles"],
+      "type": "cloud_api",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Read-only listing of IAM roles.",
+      "safer_alternative": null
+    }
+  ]
+}

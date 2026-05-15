@@ -1,0 +1,98 @@
+{
+  "category": "cloud_api",
+  "provider": "railway",
+  "description": "Irreversibility scores for Railway platform API operations. This is the provider involved in the PocketOS incident.",
+  "scoring_scale": "0 = fully safe/read-only, 10 = permanent and irreversible",
+  "patterns": [
+    {
+      "match": "volume.delete",
+      "aliases": ["deleteVolume", "DELETE /volume"],
+      "type": "cloud_api",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Deletes a storage volume. If production data and backups share the volume, both are destroyed in one call. This is the exact action behind the PocketOS incident.",
+      "safer_alternative": "Require human confirmation. Verify the volume does not hold production data or backups. Confirm backups are stored on a separate volume."
+    },
+    {
+      "match": "database.delete",
+      "aliases": ["deleteDatabase", "DELETE /database"],
+      "type": "cloud_api",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Deletes a database service and its data.",
+      "safer_alternative": "Require human confirmation. Confirm an off-platform backup exists."
+    },
+    {
+      "match": "project.delete",
+      "aliases": ["deleteProject", "DELETE /project"],
+      "type": "cloud_api",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Deletes an entire project including all services, volumes, and environment variables.",
+      "safer_alternative": "Require human confirmation. This is a maximum blast radius action."
+    },
+    {
+      "match": "service.delete",
+      "aliases": ["deleteService", "DELETE /service"],
+      "type": "cloud_api",
+      "score": 9,
+      "reversible": false,
+      "explanation": "Deletes a service. Attached volumes may or may not be removed depending on configuration.",
+      "safer_alternative": "Require human confirmation. Check whether volumes are detached or destroyed with the service."
+    },
+    {
+      "match": "deployment.delete",
+      "aliases": ["deleteDeployment"],
+      "type": "cloud_api",
+      "score": 6,
+      "reversible": true,
+      "explanation": "Removes a deployment. Can usually be redeployed from source, but the running instance state is lost.",
+      "safer_alternative": "Confirm the source is intact and redeployable."
+    },
+    {
+      "match": "variable.delete",
+      "aliases": ["deleteVariable", "variableDelete"],
+      "type": "cloud_api",
+      "score": 7,
+      "reversible": false,
+      "explanation": "Deletes an environment variable. If the value is not stored elsewhere, it is unrecoverable and can break the service.",
+      "safer_alternative": "Confirm the variable value is recorded in a secrets manager before deletion."
+    },
+    {
+      "match": "variable.upsert",
+      "aliases": ["variableUpsert", "setVariable"],
+      "type": "cloud_api",
+      "score": 5,
+      "reversible": true,
+      "explanation": "Creates or overwrites an environment variable. Overwriting loses the previous value.",
+      "safer_alternative": "Capture the existing value before overwriting."
+    },
+    {
+      "match": "deployment.create",
+      "aliases": ["deploy", "createDeployment"],
+      "type": "cloud_api",
+      "score": 4,
+      "reversible": true,
+      "explanation": "Triggers a new deployment. Reversible by redeploying a previous version, but can push broken code to production.",
+      "safer_alternative": "Confirm the deployment target environment. Prefer staging before production."
+    },
+    {
+      "match": "project.list",
+      "aliases": ["listProjects", "GET /projects"],
+      "type": "cloud_api",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Read-only listing of projects.",
+      "safer_alternative": null
+    },
+    {
+      "match": "service.get",
+      "aliases": ["getService", "GET /service"],
+      "type": "cloud_api",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Read-only service details.",
+      "safer_alternative": null
+    }
+  ]
+}

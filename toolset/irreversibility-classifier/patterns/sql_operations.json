@@ -1,0 +1,79 @@
+{
+  "category": "sql_operations",
+  "description": "Irreversibility scores for SQL operations. Matched as case-insensitive keywords at the start of a statement.",
+  "scoring_scale": "0 = fully safe/read-only, 10 = permanent and irreversible",
+  "patterns": [
+    {
+      "match": "SELECT",
+      "type": "sql_operation",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Read-only query. Does not modify data.",
+      "safer_alternative": null
+    },
+    {
+      "match": "INSERT",
+      "type": "sql_operation",
+      "score": 3,
+      "reversible": true,
+      "explanation": "Adds rows. Reversible by deleting the inserted rows, assuming they can be identified.",
+      "safer_alternative": "Run inside a transaction so it can be rolled back."
+    },
+    {
+      "match": "UPDATE",
+      "type": "sql_operation",
+      "score": 6,
+      "reversible": true,
+      "explanation": "Modifies existing rows. Previous values are lost unless captured first. An UPDATE without a WHERE clause affects the entire table.",
+      "safer_alternative": "Require a WHERE clause. Run inside a transaction. Snapshot affected rows first."
+    },
+    {
+      "match": "DELETE",
+      "type": "sql_operation",
+      "score": 8,
+      "reversible": false,
+      "explanation": "Removes rows. A DELETE without a WHERE clause empties the table. Reversible only from a backup.",
+      "safer_alternative": "Require a WHERE clause. Confirm a recent backup exists. Run inside a transaction."
+    },
+    {
+      "match": "TRUNCATE",
+      "type": "sql_operation",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Empties an entire table. Cannot be rolled back in most databases. Recoverable only from a backup.",
+      "safer_alternative": "Require human confirmation. Confirm a recent backup exists before allowing."
+    },
+    {
+      "match": "DROP",
+      "type": "sql_operation",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Permanently removes a table, database, schema, or index along with all its data and structure.",
+      "safer_alternative": "Require human confirmation. Confirm a recent backup exists before allowing."
+    },
+    {
+      "match": "ALTER",
+      "type": "sql_operation",
+      "score": 7,
+      "reversible": false,
+      "explanation": "Changes schema structure. Dropping a column destroys its data. Some changes cannot be cleanly reversed.",
+      "safer_alternative": "Review the specific ALTER. Back up the table before structural changes."
+    },
+    {
+      "match": "GRANT",
+      "type": "sql_operation",
+      "score": 5,
+      "reversible": true,
+      "explanation": "Expands access permissions. Reversible with REVOKE, but widens the blast radius while active.",
+      "safer_alternative": "Confirm the grant follows least privilege before allowing."
+    },
+    {
+      "match": "REVOKE",
+      "type": "sql_operation",
+      "score": 4,
+      "reversible": true,
+      "explanation": "Removes access permissions. Reversible with GRANT, but may break dependent systems.",
+      "safer_alternative": "Confirm no production system depends on the revoked permission."
+    }
+  ]
+}

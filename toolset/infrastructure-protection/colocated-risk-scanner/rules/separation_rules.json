@@ -1,0 +1,101 @@
+{
+  "_meta": {
+    "name": "colocated-risk-rules",
+    "version": "1.0",
+    "description": "Rules for detecting dangerous colocation in an infrastructure description. Each rule fires when two things that should be isolated from each other are found sharing the same boundary (volume, account, token, project, region).",
+    "severity_scale": "info | low | medium | high | critical"
+  },
+  "rules": [
+    {
+      "id": "COLO-001",
+      "name": "Production data and backups on the same volume",
+      "severity": "critical",
+      "detect": {
+        "type": "shared_boundary",
+        "boundary": "volume",
+        "role_a": "production_data",
+        "role_b": "backup"
+      },
+      "why": "A single destructive call against the volume destroys both the live data and its only recovery path. This is the exact failure mode of the PocketOS incident.",
+      "fix": "Move backups to a separate volume, ideally in a separate account or project that the production credential cannot reach."
+    },
+    {
+      "id": "COLO-002",
+      "name": "Production data and backups in the same account",
+      "severity": "high",
+      "detect": {
+        "type": "shared_boundary",
+        "boundary": "account",
+        "role_a": "production_data",
+        "role_b": "backup"
+      },
+      "why": "One compromised or over-permissioned credential in the account can reach both production and its backups. Account-level isolation is the standard recovery safeguard.",
+      "fix": "Store backups in a dedicated backup account with its own credentials. Grant the production agent no access to that account."
+    },
+    {
+      "id": "COLO-003",
+      "name": "Production and staging share a single credential",
+      "severity": "high",
+      "detect": {
+        "type": "shared_boundary",
+        "boundary": "token",
+        "role_a": "production_access",
+        "role_b": "staging_access"
+      },
+      "why": "An agent told to operate on staging can reach production with the same token. A wrong environment variable or a confused agent step then hits live systems.",
+      "fix": "Issue separate, environment-scoped credentials. The staging credential must have no production access at all."
+    },
+    {
+      "id": "COLO-004",
+      "name": "Read access and destructive access on the same token",
+      "severity": "medium",
+      "detect": {
+        "type": "shared_boundary",
+        "boundary": "token",
+        "role_a": "read_access",
+        "role_b": "destructive_access"
+      },
+      "why": "Most agent steps only need to read. Bundling delete/drop/terminate permissions into the same token the agent uses for routine reads means every read step carries destructive potential it never uses.",
+      "fix": "Split into a default read-only credential and a separate, narrowly scoped destructive credential that is only loaded for the specific steps that need it."
+    },
+    {
+      "id": "COLO-005",
+      "name": "Backups in the same region as production",
+      "severity": "medium",
+      "detect": {
+        "type": "shared_boundary",
+        "boundary": "region",
+        "role_a": "production_data",
+        "role_b": "backup"
+      },
+      "why": "A region-level outage or a region-scoped mistaken action can take out production and its backups together.",
+      "fix": "Replicate backups to at least one additional region."
+    },
+    {
+      "id": "COLO-006",
+      "name": "Database and its snapshots in the same project",
+      "severity": "high",
+      "detect": {
+        "type": "shared_boundary",
+        "boundary": "project",
+        "role_a": "production_data",
+        "role_b": "snapshot"
+      },
+      "why": "Deleting a project removes the database and every snapshot inside it in one operation.",
+      "fix": "Keep snapshots in a separate project, or export them to storage outside the project boundary."
+    },
+    {
+      "id": "COLO-007",
+      "name": "Single token has both deploy and delete scope across all projects",
+      "severity": "critical",
+      "detect": {
+        "type": "capability_combo",
+        "boundary": "token",
+        "capabilities": ["deploy", "delete"],
+        "scope": "all"
+      },
+      "why": "An agent token that can both deploy and delete across every project has effectively unlimited blast radius. A single confused step can be catastrophic and account-wide.",
+      "fix": "Scope the token to one project. Separate deploy from delete. Remove account-wide scope entirely."
+    }
+  ]
+}

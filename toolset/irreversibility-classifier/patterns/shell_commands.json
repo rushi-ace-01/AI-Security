@@ -1,0 +1,132 @@
+{
+  "category": "shell_commands",
+  "description": "Irreversibility scores for shell commands. Matched as the command name, with flag-based modifiers where relevant.",
+  "scoring_scale": "0 = fully safe/read-only, 10 = permanent and irreversible",
+  "patterns": [
+    {
+      "match": "ls",
+      "type": "shell_command",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Lists directory contents. Read-only.",
+      "safer_alternative": null
+    },
+    {
+      "match": "cat",
+      "type": "shell_command",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Prints file contents. Read-only.",
+      "safer_alternative": null
+    },
+    {
+      "match": "cp",
+      "type": "shell_command",
+      "score": 3,
+      "reversible": true,
+      "explanation": "Copies files. Can overwrite the destination if it already exists.",
+      "safer_alternative": "Use the -n (no-clobber) flag to avoid overwriting existing files."
+    },
+    {
+      "match": "mv",
+      "type": "shell_command",
+      "score": 4,
+      "reversible": true,
+      "explanation": "Moves or renames files. Reversible by moving back, but can overwrite the destination.",
+      "safer_alternative": "Use the -n flag to avoid overwriting. Confirm the destination path."
+    },
+    {
+      "match": "rm",
+      "type": "shell_command",
+      "score": 9,
+      "reversible": false,
+      "explanation": "Deletes files. Not sent to a trash bin. Recoverable only from a backup.",
+      "safer_alternative": "Require human confirmation. Verify the target path is not production data.",
+      "modifiers": [
+        {
+          "flag": "-rf",
+          "score": 10,
+          "explanation": "Recursive force delete. Removes entire directory trees with no prompt. Extremely dangerous."
+        },
+        {
+          "flag": "-r",
+          "score": 10,
+          "explanation": "Recursive delete. Removes entire directory trees."
+        }
+      ]
+    },
+    {
+      "match": "shred",
+      "type": "shell_command",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Overwrites file contents to make recovery impossible. Designed to be irreversible.",
+      "safer_alternative": "Require human confirmation. This action is intentionally unrecoverable."
+    },
+    {
+      "match": "dd",
+      "type": "shell_command",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Low-level disk copy/write. Can overwrite entire disks or partitions irreversibly.",
+      "safer_alternative": "Require human confirmation. Verify input and output targets carefully."
+    },
+    {
+      "match": "mkfs",
+      "type": "shell_command",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Formats a filesystem. Destroys all existing data on the target device.",
+      "safer_alternative": "Require human confirmation. Verify the target device is correct."
+    },
+    {
+      "match": "chmod",
+      "type": "shell_command",
+      "score": 5,
+      "reversible": true,
+      "explanation": "Changes file permissions. Reversible, but can break access or expose files while active.",
+      "safer_alternative": "Confirm the new permissions do not over-expose sensitive files."
+    },
+    {
+      "match": "chown",
+      "type": "shell_command",
+      "score": 5,
+      "reversible": true,
+      "explanation": "Changes file ownership. Reversible, but can break access for services or users.",
+      "safer_alternative": "Confirm no running service depends on the current ownership."
+    },
+    {
+      "match": "kill",
+      "type": "shell_command",
+      "score": 4,
+      "reversible": true,
+      "explanation": "Terminates a process. Reversible by restarting, but in-memory state is lost.",
+      "safer_alternative": "Confirm the process is not handling live production traffic."
+    },
+    {
+      "match": "git",
+      "type": "shell_command",
+      "score": 2,
+      "reversible": true,
+      "explanation": "Version control operations are mostly reversible. Some subcommands are not.",
+      "safer_alternative": null,
+      "modifiers": [
+        {
+          "flag": "push --force",
+          "score": 8,
+          "explanation": "Force push overwrites remote history. Can erase other people's commits irreversibly."
+        },
+        {
+          "flag": "reset --hard",
+          "score": 7,
+          "explanation": "Discards uncommitted changes and resets history. Uncommitted work is lost."
+        },
+        {
+          "flag": "clean -fd",
+          "score": 8,
+          "explanation": "Deletes untracked files and directories. Not recoverable via git."
+        }
+      ]
+    }
+  ]
+}

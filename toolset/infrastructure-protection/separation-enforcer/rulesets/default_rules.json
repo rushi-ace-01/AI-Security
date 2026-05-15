@@ -1,0 +1,94 @@
+{
+  "_meta": {
+    "name": "default-separation-ruleset",
+    "version": "1.0",
+    "description": "Machine-readable separation-of-concerns policy for AI agent infrastructure. The Separation Enforcer checks an infrastructure config against these rules and exits non-zero if any blocking rule is violated. Designed to run in CI before an agent is deployed.",
+    "philosophy": "Each rule states one thing that must be true. A rule has an 'enforce' level: 'block' fails the check, 'warn' reports but passes. Teams can copy this file, tighten or relax levels, and version it alongside their infrastructure."
+  },
+  "rules": [
+    {
+      "id": "SEP-001",
+      "name": "Production data and backups must not share a volume",
+      "enforce": "block",
+      "check": {
+        "type": "no_shared_boundary",
+        "boundary": "volume",
+        "role_a": "production_data",
+        "role_b": "backup"
+      },
+      "rationale": "Co-located backups share the fate of the data they protect. One destructive call ends both. This is the PocketOS failure.",
+      "remediation": "Place backups on a distinct volume in a separate account or project."
+    },
+    {
+      "id": "SEP-002",
+      "name": "Production data and backups must not share an account",
+      "enforce": "block",
+      "check": {
+        "type": "no_shared_boundary",
+        "boundary": "account",
+        "role_a": "production_data",
+        "role_b": "backup"
+      },
+      "rationale": "Account-level isolation is the standard last line of defence for backups.",
+      "remediation": "Use a dedicated backup account with its own credentials, unreachable by the agent."
+    },
+    {
+      "id": "SEP-003",
+      "name": "No credential may hold both production and staging access",
+      "enforce": "block",
+      "check": {
+        "type": "no_role_combo_on_credential",
+        "roles": ["production_access", "staging_access"]
+      },
+      "rationale": "Environment-spanning credentials let a staging task reach production by mistake.",
+      "remediation": "Issue separate, environment-scoped credentials."
+    },
+    {
+      "id": "SEP-004",
+      "name": "An agent's default credential must not hold destructive capability",
+      "enforce": "block",
+      "check": {
+        "type": "no_capability_on_role",
+        "role": "agent_default",
+        "forbidden_capabilities": ["delete", "drop", "terminate", "truncate", "destroy"]
+      },
+      "rationale": "The credential an agent uses for routine work should never be able to cause irreversible loss. Destructive capability belongs in a separate, deliberately-loaded credential.",
+      "remediation": "Move destructive capability to a single-purpose credential loaded only for the specific step that needs it."
+    },
+    {
+      "id": "SEP-005",
+      "name": "No credential may have destructive capability at account-wide scope",
+      "enforce": "block",
+      "check": {
+        "type": "no_capability_at_scope",
+        "forbidden_capabilities": ["delete", "drop", "terminate", "truncate", "destroy"],
+        "forbidden_scope": "all"
+      },
+      "rationale": "Destructive power plus unlimited scope is the maximum blast radius configuration.",
+      "remediation": "Scope any destructive credential to a single project or resource."
+    },
+    {
+      "id": "SEP-006",
+      "name": "Read access and destructive access should not share a credential",
+      "enforce": "warn",
+      "check": {
+        "type": "no_role_combo_on_credential",
+        "roles": ["read_access", "destructive_access"]
+      },
+      "rationale": "Bundling routine reads with destruction means every read step carries unused destructive potential.",
+      "remediation": "Split into a default read-only credential and a separate destructive credential."
+    },
+    {
+      "id": "SEP-007",
+      "name": "Every production resource should declare a backup counterpart",
+      "enforce": "warn",
+      "check": {
+        "type": "role_requires_counterpart",
+        "role": "production_data",
+        "counterpart_role": "backup"
+      },
+      "rationale": "A production resource with no backup declared in the config is either unprotected or undocumented. Both are problems.",
+      "remediation": "Declare the backup resource in the config, or create one if it does not exist."
+    }
+  ]
+}

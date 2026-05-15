@@ -1,0 +1,134 @@
+{
+  "category": "cloud_api",
+  "provider": "supabase",
+  "description": "Irreversibility scores for Supabase Management API and database operations.",
+  "scoring_scale": "0 = fully safe/read-only, 10 = permanent and irreversible",
+  "patterns": [
+    {
+      "match": "project.delete",
+      "aliases": ["deleteProject", "DELETE /v1/projects"],
+      "type": "cloud_api",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Deletes a Supabase project including the database, auth users, storage buckets, and edge functions.",
+      "safer_alternative": "Require human confirmation. This is a maximum blast radius action."
+    },
+    {
+      "match": "storage.bucket.delete",
+      "aliases": ["deleteBucket", "DELETE /storage/buckets"],
+      "type": "cloud_api",
+      "score": 9,
+      "reversible": false,
+      "explanation": "Deletes a storage bucket and all files within it.",
+      "safer_alternative": "Require human confirmation. Confirm files are backed up elsewhere."
+    },
+    {
+      "match": "storage.object.delete",
+      "aliases": ["removeObject", "deleteFile"],
+      "type": "cloud_api",
+      "score": 7,
+      "reversible": false,
+      "explanation": "Deletes a file from storage. No built-in trash or version history by default.",
+      "safer_alternative": "Confirm the file is not referenced by production records."
+    },
+    {
+      "match": "database.query.drop",
+      "aliases": ["DROP TABLE", "DROP SCHEMA"],
+      "type": "cloud_api",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Runs a DROP statement against the project database via the SQL API. Destroys tables or schemas permanently.",
+      "safer_alternative": "Require human confirmation. Confirm a recent backup exists."
+    },
+    {
+      "match": "auth.user.delete",
+      "aliases": ["deleteUser", "admin.deleteUser"],
+      "type": "cloud_api",
+      "score": 8,
+      "reversible": false,
+      "explanation": "Deletes an auth user. Associated identity records are removed. Breaks any data keyed to that user id.",
+      "safer_alternative": "Require human confirmation. Consider disabling the user instead of deleting."
+    },
+    {
+      "match": "secrets.delete",
+      "aliases": ["deleteSecret"],
+      "type": "cloud_api",
+      "score": 7,
+      "reversible": false,
+      "explanation": "Deletes an edge function secret. Unrecoverable if not stored elsewhere, and can break functions in production.",
+      "safer_alternative": "Confirm the secret value is recorded in a separate secrets manager."
+    },
+    {
+      "match": "function.deploy",
+      "aliases": ["deployFunction"],
+      "type": "cloud_api",
+      "score": 4,
+      "reversible": true,
+      "explanation": "Deploys an edge function. Overwrites the previous version, which is lost unless tracked in source control.",
+      "safer_alternative": "Confirm the previous version is committed to source control."
+    },
+    {
+      "match": "database.query.select",
+      "aliases": ["SELECT"],
+      "type": "cloud_api",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Read-only query against the database.",
+      "safer_alternative": null
+    },
+    {
+      "match": "database.query.insert",
+      "aliases": ["INSERT"],
+      "type": "cloud_api",
+      "score": 3,
+      "reversible": true,
+      "explanation": "Inserts rows into a table. Reversible by deleting the inserted rows if they can be identified.",
+      "safer_alternative": "Run inside a transaction so it can be rolled back."
+    },
+    {
+      "match": "database.query.update",
+      "aliases": ["UPDATE"],
+      "type": "cloud_api",
+      "score": 6,
+      "reversible": true,
+      "explanation": "Updates existing rows. Previous values are lost unless captured first. A service_role key bypasses Row Level Security, so every row is reachable.",
+      "safer_alternative": "Require a WHERE clause, run inside a transaction, and snapshot affected rows first."
+    },
+    {
+      "match": "database.query.delete",
+      "aliases": ["DELETE"],
+      "type": "cloud_api",
+      "score": 8,
+      "reversible": false,
+      "explanation": "Deletes rows from a table. Recoverable only from a backup. A service_role key bypasses Row Level Security, so every row is reachable.",
+      "safer_alternative": "Require a WHERE clause and confirm a recent backup exists."
+    },
+    {
+      "match": "database.query.truncate",
+      "aliases": ["TRUNCATE"],
+      "type": "cloud_api",
+      "score": 10,
+      "reversible": false,
+      "explanation": "Empties an entire table. Cannot be rolled back. Recoverable only from a backup.",
+      "safer_alternative": "Require human confirmation. Confirm a recent backup exists."
+    },
+    {
+      "match": "storage.object.read",
+      "aliases": ["readObject", "getPublicObject"],
+      "type": "cloud_api",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Reads a storage object. Read-only.",
+      "safer_alternative": null
+    },
+    {
+      "match": "project.get",
+      "aliases": ["getProject", "GET /v1/projects"],
+      "type": "cloud_api",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Read-only project details.",
+      "safer_alternative": null
+    }
+  ]
+}

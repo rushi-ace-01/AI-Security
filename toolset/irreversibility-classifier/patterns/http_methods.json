@@ -1,0 +1,63 @@
+{
+  "category": "http_methods",
+  "description": "Irreversibility scores for HTTP methods. Scores are baseline; endpoint context can raise them.",
+  "scoring_scale": "0 = fully safe/read-only, 10 = permanent and irreversible",
+  "patterns": [
+    {
+      "match": "GET",
+      "type": "http_method",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Read-only request. Does not modify state.",
+      "safer_alternative": null
+    },
+    {
+      "match": "HEAD",
+      "type": "http_method",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Metadata-only request. Does not modify state.",
+      "safer_alternative": null
+    },
+    {
+      "match": "OPTIONS",
+      "type": "http_method",
+      "score": 0,
+      "reversible": true,
+      "explanation": "Capability discovery request. Does not modify state.",
+      "safer_alternative": null
+    },
+    {
+      "match": "POST",
+      "type": "http_method",
+      "score": 4,
+      "reversible": true,
+      "explanation": "Creates a resource. Usually reversible by deleting the created resource, but may trigger side effects (emails, payments, webhooks).",
+      "safer_alternative": "Confirm the endpoint is not a payment, send, or trigger action before allowing."
+    },
+    {
+      "match": "PUT",
+      "type": "http_method",
+      "score": 6,
+      "reversible": true,
+      "explanation": "Replaces a resource entirely. Previous state is lost unless backed up.",
+      "safer_alternative": "Snapshot the resource before the call so the prior state can be restored."
+    },
+    {
+      "match": "PATCH",
+      "type": "http_method",
+      "score": 5,
+      "reversible": true,
+      "explanation": "Partially modifies a resource. Overwritten fields are lost unless backed up.",
+      "safer_alternative": "Capture the affected fields before the call."
+    },
+    {
+      "match": "DELETE",
+      "type": "http_method",
+      "score": 9,
+      "reversible": false,
+      "explanation": "Removes a resource. Typically irreversible unless the provider has a trash/recovery window.",
+      "safer_alternative": "Require human confirmation. Verify the resource is not production data or a backup."
+    }
+  ]
+}
